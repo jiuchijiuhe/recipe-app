@@ -79,10 +79,10 @@ function handleTogglePublic(item) {
   refreshData()
 }
 
+import { useRouter } from 'vue-router'
+const router = useRouter()
 function sharePublic() {
-  const text = generateShareText()
-  if (navigator.share) { navigator.share({ title: '美食地图', text }).catch(() => {}) }
-  else { navigator.clipboard?.writeText(text).then(() => showToast('已复制')) }
+  router.push('/community')
 }
 
 const allCities = computed(() => {
@@ -102,7 +102,7 @@ function cityEmoji(city) {
   <div class="foodmap-page">
     <div class="header">
       <h1 class="page-title">美食地图</h1>
-      <p class="page-subtitle">收藏各城市美食安利 · 点击链接跳转</p>
+      <p class="page-subtitle">收藏各城市美食安利 · <router-link to="/community" style="color:#5B9BD5;">查看社区</router-link></p>
     </div>
     <div class="top-actions">
       <van-button round block type="primary" @click="showAdd = true">添加美食安利</van-button>

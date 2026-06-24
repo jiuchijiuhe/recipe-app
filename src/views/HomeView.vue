@@ -43,10 +43,12 @@ const categories = [
   { name: '汤煲', icon: '🍲', cuisine: '汤煲' },
   { name: '面食', icon: '🍜', cuisine: '面食' },
   { name: '粤菜', icon: '🥢', cuisine: '粤菜' },
+  { name: '火锅蘸料', icon: '🍲', cuisine: '_hotpot' },
 ]
 
 function goCategory(cuisine) {
-  router.push({ name: 'search', query: { cuisine } })
+  if (cuisine === '_hotpot') router.push({ name: 'hotpot' })
+  else router.push({ name: 'search', query: { cuisine } })
 }
 
 function goFoodMap() {

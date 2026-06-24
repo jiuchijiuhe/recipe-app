@@ -1,158 +1,143 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import { getPublicItems } from '../utils/foodMap.js'
 
-const route = useRoute()
+const feed = ref([])
+const showShare = ref(false)
+const shareText = ref('')
+const showImport = ref(false)
+const importText = ref('')
 
-// 我的公开收藏
-const myPublic = ref({})
-
-// 社区Feed：从URL加载的其他人公开收藏
-const feed = ref({}) // { city: [items] }
-
-function loadMyData() {
-  myPublic.value = getPublicItems()
-}
-
-function generateShareUrl() {
-  const pub = getPublicItems()
-  if (!Object.keys(pub).length) { showToast('没有公开的收藏'); return }
-  const encoded = btoa(encodeURIComponent(JSON.stringify(pub)))
-  const url = `${window.location.origin}${window.location.pathname}#/community?data=${encoded}`
-  navigator.clipboard?.writeText(url).then(() => showToast('链接已复制，发给朋友'))
-    .catch(() => showToast('复制失败'))
-}
-
-// 从localStorage加载缓存的社区数据
 function loadFeed() {
-  try {
-    feed.value = JSON.parse(localStorage.getItem('community-feed') || '{}')
-  } catch { feed.value = {} }
+  try { feed.value = JSON.parse(localStorage.getItem('comm-feed') || '[]') }
+  catch { feed.value = [] }
 }
 
-// 添加到社区Feed
+function doShare() {
+  const pub = getPublicItems()
+  if (!Object.keys(pub).filter(k => pub[k]?.length).length) {
+    showToast('请先去美食地图添加安利并设为公开')
+    return
+  }
+  shareText.value = JSON.stringify(pub)
+  // 先试自动复制
+  const ta = document.createElement('textarea')
+  ta.value = shareText.value
+  ta.style.position = 'fixed'; ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+    showToast('已复制！发给朋友')
+  } catch {
+    showShare.value = true
+  }
+  document.body.removeChild(ta)
+}
+
+function doImport() {
+  try {
+    const data = JSON.parse(importText.value.trim())
+    addToFeed(data)
+    importText.value = ''
+    showImport.value = false
+  } catch { showToast('格式不对') }
+}
+
 function addToFeed(data) {
   loadFeed()
   Object.entries(data).forEach(([city, items]) => {
-    if (!feed.value[city]) feed.value[city] = []
+    if (!Array.isArray(items)) return
     items.forEach(item => {
-      if (!feed.value[city].find(f => f.url === item.url)) {
-        feed.value[city].push({ ...item, addedAt: Date.now() })
+      if (!feed.value.find(f => f.url === item.url)) {
+        feed.value.unshift({ ...item, city, time: Date.now() })
       }
     })
   })
-  localStorage.setItem('community-feed', JSON.stringify(feed.value))
-  showToast('已加入社区Feed')
+  if (feed.value.length > 200) feed.value = feed.value.slice(0, 200)
+  localStorage.setItem('comm-feed', JSON.stringify(feed.value))
+  showToast('已加入Feed')
 }
 
-// 清除Feed
 function clearFeed() {
-  feed.value = {}
-  localStorage.removeItem('community-feed')
+  feed.value = []
+  localStorage.removeItem('comm-feed')
   showToast('已清除')
-  loadFeed()
 }
 
-// 检查URL中的分享数据
-onMounted(() => {
-  loadMyData()
-  loadFeed()
-  if (route.query.data) {
-    try {
-      const data = JSON.parse(decodeURIComponent(atob(route.query.data)))
-      addToFeed(data)
-    } catch { /* ignore */ }
-  }
-})
-
-function ce(c) {
-  const m = {'成都':'🐼','重庆':'🔥','广州':'🦐','西安':'🏯','长沙':'🌶️','上海':'🌃','北京':'🏛️','深圳':'💻','杭州':'🛶'}
-  return m[c] || '📍'
-}
-
-const showImport = ref(false)
-const importCode = ref('')
-
-function loadFromPaste() {
-  try {
-    const data = JSON.parse(decodeURIComponent(atob(importCode.value.trim())))
-    addToFeed(data)
-    importCode.value = ''
-    showImport.value = false
-    showToast('加载成功！')
-  } catch { showToast('链接格式错误') }
-}
+onMounted(loadFeed)
 </script>
 
 <template>
-  <div class="community-page">
+  <div class="page">
     <div class="header">
-      <h1 class="page-title">🌐 美食社区</h1>
-      <p class="page-subtitle">发现大家公开的美食安利</p>
+      <h1 class="t">美食社区</h1>
+      <p class="st">分享和发现美食安利</p>
+    </div>
+    <div class="bar">
+      <van-button round size="small" type="primary" @click="doShare">分享公开收藏</van-button>
+      <van-button round size="small" plain type="primary" @click="showImport = true">加载别人分享</van-button>
     </div>
 
-    <!-- 我的 -->
-    <div class="section">
-      <h3 class="section-title">📤 我的</h3>
-      <div v-if="Object.keys(myPublic).length">
-        <p style="font-size:13px;color:#969799;margin-bottom:8px;">公开了 {{ Object.keys(myPublic).length }} 个城市</p>
-        <van-button round size="small" type="primary" @click="generateShareUrl">🔗 生成分享链接</van-button>
-      </div>
-      <p v-else style="font-size:13px;color:#c8c9cc;">还没有公开的收藏，去「美食地图」添加并设为公开</p>
-    </div>
-
-    <!-- 加载别人的 -->
-    <div class="section">
-      <h3 class="section-title">📥 加载别人的安利</h3>
-      <van-button round size="small" plain type="primary" @click="showImport = true" v-if="!showImport">粘贴分享链接</van-button>
-      <div v-if="showImport" class="import-box">
-        <van-field v-model="importCode" placeholder="粘贴朋友发你的链接..." type="textarea" rows="2" />
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <van-button round size="small" type="primary" @click="loadFromPaste">加载</van-button>
-          <van-button round size="small" plain @click="showImport = false">取消</van-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 社区Feed -->
-    <div class="section" v-if="Object.keys(feed).length">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h3 class="section-title">🔥 社区Feed</h3>
+    <div v-if="feed.length" class="feed">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
+        <h3 class="ft">Feed ({{ feed.length }})</h3>
         <span style="font-size:12px;color:#ee0a24;cursor:pointer;" @click="clearFeed">清除</span>
       </div>
-      <div v-for="(items, city) in feed" :key="city" style="margin-bottom:12px;">
-        <h4 style="font-size:15px;font-weight:600;margin-bottom:6px;">{{ ce(city) }} {{ city }}</h4>
-        <div v-for="item in items" :key="item.id||item.url" class="feed-item">
-          <a :href="item.url" target="_blank" class="feed-link">
-            <span class="feed-source">{{ item.source||'抖音' }}</span>
-            <span class="feed-title">{{ item.title }}</span>
-          </a>
-        </div>
+      <div v-for="(item, idx) in feed" :key="idx" class="card">
+        <a :href="item.url" target="_blank" class="card-link">
+          <div class="card-top">
+            <span class="card-city">{{ item.city }}</span>
+            <span class="card-src">{{ item.source || '抖音' }}</span>
+          </div>
+          <p class="card-title">{{ item.title }}</p>
+        </a>
       </div>
     </div>
-
-    <div v-else class="section">
-      <p style="font-size:13px;color:#c8c9cc;text-align:center;padding:40px 0;">
-        还没有加载社区内容<br/>让朋友分享链接，粘贴到上面
-      </p>
+    <div v-else class="empty">
+      <span class="ei">📭</span>
+      <p>还没有内容</p>
     </div>
+
+    <!-- 分享弹窗 -->
+    <van-popup v-model:show="showShare" round position="bottom" :style="{ height:'55%' }">
+      <div class="pop">
+        <h3>复制下面文字发给朋友</h3>
+        <div class="text-box">{{ shareText }}</div>
+        <p style="font-size:12px;color:#969799;text-align:center;">全选 → 复制 → 发给朋友</p>
+      </div>
+    </van-popup>
+
+    <!-- 加载弹窗 -->
+    <van-popup v-model:show="showImport" round position="bottom" :style="{ height:'50%' }">
+      <div class="pop">
+        <h3>粘贴朋友发你的内容</h3>
+        <van-field v-model="importText" placeholder="长按粘贴..." type="textarea" rows="5" />
+        <van-button round block type="primary" @click="doImport" style="margin-top:12px;">加载</van-button>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <style scoped>
-.community-page { padding-bottom: 70px; }
+.page { padding-bottom: 70px; }
 .header { text-align: center; padding: 20px 16px 8px; }
-.page-title { font-size: 26px; font-weight: bold; }
-.page-subtitle { font-size: 13px; color: #969799; margin-top: 4px; }
-.section { margin: 12px; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(91,155,213,0.06); }
-.section-title { font-size: 17px; font-weight: bold; margin-bottom: 8px; }
-
-.import-box { margin-top: 8px; }
-
-.feed-item { margin-bottom: 6px; }
-.feed-link { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; padding: 8px; background: #f7f8fa; border-radius: 8px; }
-.feed-source { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #111; color: #fff; white-space: nowrap; }
-.feed-title { font-size: 13px; flex: 1; }
+.t { font-size: 26px; font-weight: bold; }
+.st { font-size: 13px; color: #969799; margin-top: 4px; }
+.bar { display: flex; gap: 10px; padding: 12px 16px; justify-content: center; }
+.feed { padding: 0 12px; }
+.ft { font-size: 16px; font-weight: bold; margin: 12px 0; }
+.card { background: #fff; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(91,155,213,0.06); }
+.card-link { display: block; padding: 14px 16px; text-decoration: none; color: inherit; }
+.card-link:active { background: #f7f8fa; }
+.card-top { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.card-city { font-size: 13px; font-weight: 600; color: #5B9BD5; }
+.card-src { font-size: 11px; background: #111; color: #fff; padding: 2px 8px; border-radius: 3px; }
+.card-title { font-size: 15px; font-weight: 500; }
+.empty { text-align: center; padding: 60px 16px; }
+.ei { font-size: 48px; }
+.pop { padding: 24px 16px; }
+.pop h3 { text-align: center; margin-bottom: 12px; }
+.text-box { background: #f5f5f5; border-radius: 8px; padding: 12px; font-size: 11px; word-break: break-all; color: #323233; max-height: 300px; overflow-y: auto; user-select: all; }
 </style>
