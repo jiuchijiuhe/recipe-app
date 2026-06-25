@@ -7,10 +7,12 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import recipes from '../data/recipes.json'
+import { getCustomRecipes } from '../utils/customRecipes.js'
 import { isFavorited, toggleFavorite, addHistory } from '../utils/storage.js'
 
 const route = useRoute()
-const recipe = ref(recipes.find((r) => r.id === route.params.id) || null)
+const allRecipes = [...recipes, ...getCustomRecipes()]
+const recipe = ref(allRecipes.find((r) => r.id === route.params.id) || null)
 const favorited = ref(false)
 
 // === 视频链接 ===
@@ -96,7 +98,7 @@ if (!recipe.value) {
       <div class="recipe-stats">
         <span class="stat">⏱️ {{ recipe.cookingTime }}分钟</span>
         <span class="stat">👤 {{ recipe.servings }}人份</span>
-        <span class="stat">🔥 {{ recipe.calories }}千卡</span>
+        <span class="stat">🔥 {{ recipe.calories }}千卡<span style="font-size:10px;opacity:0.6;">（估算值）</span></span>
         <span class="stat">📊 {{ recipe.difficulty }}</span>
       </div>
       <div class="recipe-tags">

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import recipes from '../data/recipes.json'
+import { getAllRecipes } from '../utils/customRecipes.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -9,9 +9,11 @@ const router = useRouter()
 const keyword = ref(route.query.keyword || '')
 
 // === 食材 ===
+const allRecipes = computed(() => getAllRecipes())
+
 const allIngredients = computed(() => {
   const set = new Set()
-  recipes.forEach(r => r.ingredients.main.forEach(i => set.add(i.name)))
+  allRecipes.value.forEach(r => r.ingredients.main.forEach(i => set.add(i.name)))
   return [...set].sort()
 })
 
@@ -52,7 +54,7 @@ const servingMode = ref('all')
 
 // === 搜索结果 ===
 const results = computed(() => {
-  let list = [...recipes]
+  let list = [...allRecipes.value]
 
   if (keyword.value.trim()) {
     const kw = keyword.value.trim().toLowerCase()

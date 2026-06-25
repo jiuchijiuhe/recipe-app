@@ -31,6 +31,8 @@ import ProfileView from './views/ProfileView.vue'
 import AuthView from './views/AuthView.vue'
 import CommunityView from './views/CommunityView.vue'
 import HotpotView from './views/HotpotView.vue'
+import AddRecipe from './views/AddRecipe.vue'
+import MyRecipesView from './views/MyRecipesView.vue'
 
 // 路由配置
 const routes = [
@@ -38,6 +40,8 @@ const routes = [
   { path: '/auth', component: AuthView, name: 'auth' },
   { path: '/community', component: CommunityView, name: 'community' },
   { path: '/hotpot', component: HotpotView, name: 'hotpot' },
+  { path: '/add-recipe', component: AddRecipe, name: 'add-recipe' },
+  { path: '/my-recipes', component: MyRecipesView, name: 'my-recipes' },
   { path: '/favorites', component: FavoritesView, name: 'favorites' },
   { path: '/search', component: SearchView, name: 'search' },
   { path: '/takeout', component: TakeoutView, name: 'takeout' },

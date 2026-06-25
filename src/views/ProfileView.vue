@@ -81,6 +81,15 @@ onMounted(() => {
         <van-icon name="arrow" color="#c8c9cc" />
       </div>
 
+      <div class="action-card" @click="router.push('/my-recipes')">
+        <span class="action-icon">✍️</span>
+        <div class="action-info">
+          <p class="action-title">我的食谱</p>
+          <p class="action-desc">查看和管理你创建的食谱</p>
+        </div>
+        <van-icon name="arrow" color="#c8c9cc" />
+      </div>
+
       <div class="action-card" @click="router.push('/favorites')">
         <span class="action-icon">❤️</span>
         <div class="action-info">
