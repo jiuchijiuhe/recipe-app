@@ -1,0 +1,17 @@
+{
+  "name": "每日食谱 - 今天吃什么",
+  "short_name": "每日食谱",
+  "description": "食谱推荐、做菜教程、外卖推荐一站式App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#5B9BD5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
